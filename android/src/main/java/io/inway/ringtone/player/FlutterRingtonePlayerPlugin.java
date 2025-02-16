@@ -10,13 +10,10 @@ import android.os.Build;
 import androidx.annotation.NonNull;
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
-import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
-import io.flutter.embedding.engine.plugins.FlutterPlugin.FlutterPluginBinding;
-import io.flutter.plugin.common.PluginRegistry;
 
 /** 
  * FlutterRingtonePlayerPlugin
@@ -38,26 +35,13 @@ public class FlutterRingtonePlayerPlugin implements FlutterPlugin, MethodCallHan
     /// Current playing ringtone instance
     private Ringtone ringtone;
 
-    /** Plugin registration for V1 embedding. */
-    @SuppressWarnings("deprecation")
-    public static void registerWith(PluginRegistry.Registrar registrar) {
-        FlutterRingtonePlayerPlugin instance = new FlutterRingtonePlayerPlugin();
-        instance.onAttachedToEngine(registrar.context(), registrar.messenger());
-    }
-
-    /** Plugin registration for V2 embedding. */
     @Override
     public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
-        onAttachedToEngine(binding.getApplicationContext(), binding.getBinaryMessenger());
-    }
+        context = binding.getApplicationContext();
+        ringtoneManager = new RingtoneManager(context);
+        ringtoneManager.setStopPreviousRingtone(true);
 
-    /** Common initialization code for V1 and V2 embedding. */
-    private void onAttachedToEngine(Context applicationContext, BinaryMessenger messenger) {
-        this.context = applicationContext;
-        this.ringtoneManager = new RingtoneManager(context);
-        this.ringtoneManager.setStopPreviousRingtone(true);
-
-        channel = new MethodChannel(messenger, CHANNEL_NAME);
+        channel = new MethodChannel(binding.getBinaryMessenger(), CHANNEL_NAME);
         channel.setMethodCallHandler(this);
     }
 
