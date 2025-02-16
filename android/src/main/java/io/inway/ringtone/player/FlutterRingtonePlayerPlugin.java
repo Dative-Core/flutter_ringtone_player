@@ -1,14 +1,10 @@
 package io.inway.ringtone.player;
 
-
 import android.content.Context;
-import android.media.AudioManager;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
-
-
 import androidx.annotation.NonNull;
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
@@ -19,34 +15,60 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
 import io.flutter.plugin.common.PluginRegistry.Registrar;
 
-/**
+/** 
  * FlutterRingtonePlayerPlugin
+ * 
+ * A Flutter plugin for playing system ringtones on Android.
+ * Supports both V1 and V2 Flutter Android embedding.
  */
-public class FlutterRingtonePlayerPlugin implements MethodCallHandler, FlutterPlugin {
+public class FlutterRingtonePlayerPlugin implements FlutterPlugin, MethodCallHandler {
+    private static final String CHANNEL_NAME = "flutter_ringtone_player";
+    /// The MethodChannel that will the communication between Flutter and native Android
+    private MethodChannel channel;
+    
+    /// Application context
     private Context context;
-    private MethodChannel methodChannel;
+    
+    /// Ringtone manager for handling system sounds
     private RingtoneManager ringtoneManager;
+    
+    /// Current playing ringtone instance
     private Ringtone ringtone;
 
+    /** Plugin registration for V1 embedding. */
+    @SuppressWarnings("deprecation")
+    public static void registerWith(Registrar registrar) {
+        FlutterRingtonePlayerPlugin instance = new FlutterRingtonePlayerPlugin();
+        instance.onAttachedToEngine(registrar.context(), registrar.messenger());
+    }
+
+    /** Plugin registration for V2 embedding. */
     @Override
     public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
         onAttachedToEngine(binding.getApplicationContext(), binding.getBinaryMessenger());
     }
 
+    /** Common initialization code for V1 and V2 embedding. */
     private void onAttachedToEngine(Context applicationContext, BinaryMessenger messenger) {
         this.context = applicationContext;
         this.ringtoneManager = new RingtoneManager(context);
         this.ringtoneManager.setStopPreviousRingtone(true);
 
-        methodChannel = new MethodChannel(messenger, "flutter_ringtone_player");
-        methodChannel.setMethodCallHandler(this);
+        channel = new MethodChannel(messenger, CHANNEL_NAME);
+        channel.setMethodCallHandler(this);
     }
 
+    /** Cleanup when detached from Flutter engine. */
     @Override
     public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
+        if (ringtone != null) {
+            ringtone.stop();
+            ringtone = null;
+        }
+        channel.setMethodCallHandler(null);
+        channel = null;
         context = null;
-        methodChannel.setMethodCallHandler(null);
-        methodChannel = null;
+        ringtoneManager = null;
     }
 
 
